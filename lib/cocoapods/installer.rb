@@ -16,6 +16,10 @@ module Pod
       def download_only_specifications
         dependent_specifications - build_specifications
       end
+
+      def header_only_specifications
+        @header_specifications ||= Resolver.new(@podfile, @definition ? @definition.header_dependencies : nil).resolve
+      end
     end
 
     include Config::Mixin

@@ -306,6 +306,33 @@ else
         end
       end
 
+      it "correctly sets up targets with :includes_headers_for option" do
+        Pod::Source.reset!
+        Pod::Spec::Set.reset!
+
+        podfile = Pod::Podfile.new do
+          config.rootspec = self
+          self.platform platform
+
+          target :ocunit, :exclusive => true, :include_headers_for => :default do
+            dependency 'OCMock'
+            dependency 'Specta'
+            dependency 'Expecta'
+          end
+
+          dependency 'ASIHTTPRequest'
+        end
+
+        installer = Pod::Installer.new(podfile)
+        installer.install!
+
+        expected_header_search_paths = ['', '/ASIHTTPRequest', '/Expecta', '/OCMock', '/Specta'].tap do |a|
+          a << '/Reachability' if platform == :ios
+        end.sort.map { |path| "\"$(PODS_ROOT)/Headers#{path}\"" }.join(' ')
+
+        installer.target_installers[1].xcconfig.to_hash['HEADER_SEARCH_PATHS'].should == expected_header_search_paths
+      end
+
       it "sets up an existing project with pods" do
         basename = platform == :ios ? 'iPhone' : 'Mac'
         projpath = temporary_directory + 'ASIHTTPRequest.xcodeproj'

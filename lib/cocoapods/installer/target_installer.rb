@@ -88,6 +88,7 @@ module Pod
           # Collect all header search paths
           header_search_paths.concat(spec.header_search_paths)
         end
+        header_search_paths.concat(header_only_specifications.map(&:header_search_paths).flatten)
         xcconfig.merge!('HEADER_SEARCH_PATHS' => header_search_paths.sort.uniq.join(" "))
 
         # Add all the target related support files to the group, even the copy

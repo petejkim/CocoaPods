@@ -81,12 +81,18 @@ describe "Pod::Podfile" do
           end
         end
 
+        target :ocunit, :exclusive => true, :include_headers_for => :default do
+          dependency 'OCMock'
+          dependency 'Specta'
+          dependency 'Expecta'
+        end
+
         dependency 'ASIHTTPRequest'
       end
     end
 
     it "returns all dependencies of all targets combined, which is used during resolving to enusre compatible dependencies" do
-      @podfile.dependencies.map(&:name).sort.should == %w{ ASIHTTPRequest JSONKit Reachability SSZipArchive }
+      @podfile.dependencies.map(&:name).sort.should == %w{ ASIHTTPRequest Expecta JSONKit OCMock Reachability SSZipArchive Specta }
     end
 
     it "adds dependencies outside of any explicit target block to the default target" do
@@ -108,6 +114,19 @@ describe "Pod::Podfile" do
       target = @podfile.target_definitions[:test]
       target.lib_name.should == 'Pods-test'
       target.dependencies.should == [Pod::Dependency.new('JSONKit')]
+    end
+
+    it "does not add dependency, but adds headers to targets that specify :include_headers_for option" do
+      target = @podfile.target_definitions[:ocunit]
+      target.lib_name.should == 'Pods-ocunit'
+      target.dependencies.sort_by(&:name).should == [
+        Pod::Dependency.new('Expecta'),
+        Pod::Dependency.new('OCMock'),
+        Pod::Dependency.new('Specta')
+      ]
+      target.header_dependencies.should == [
+        Pod::Dependency.new('ASIHTTPRequest')
+      ]
     end
 
     it "adds dependencies of the outer target to nested targets" do

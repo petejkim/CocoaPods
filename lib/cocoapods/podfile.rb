@@ -1,10 +1,10 @@
 module Pod
   class Podfile
     class TargetDefinition
-      attr_reader :name, :parent, :target_dependencies
+      attr_reader :name, :parent, :target_dependencies, :headers_target
 
-      def initialize(name, parent = nil)
-        @name, @parent, @target_dependencies = name, parent, []
+      def initialize(name, parent = nil, headers_target = nil)
+        @name, @parent, @target_dependencies, @headers_target = name, parent, [], headers_target
       end
 
       def lib_name
@@ -21,6 +21,10 @@ module Pod
       # ones in `target_dependencies`.
       def dependencies
         @target_dependencies + (@parent ? @parent.dependencies : [])
+      end
+
+      def header_dependencies
+        @headers_target ? @headers_target.dependencies : []
       end
 
       def empty?
@@ -178,7 +182,7 @@ module Pod
     #     dependency 'SSZipArchive'
     #   end
     #
-    #   target :test, :exclusive => true do
+    #   target :test, :exclusive => true, :include_headers_for => :default do
     #     dependency 'JSONKit'
     #   end
     #
@@ -190,10 +194,11 @@ module Pod
     # The `:default` target has only one dependency (ASIHTTPRequest), whereas the
     # `:debug` target has two (ASIHTTPRequest, SSZipArchive). The `:test` target,
     # however, is an exclusive target which means it will only have one
-    # dependency (JSONKit).
+    # dependency (JSONKit). However, it will include header files for
+    # the default target's dependencies.
     def target(name, options = {})
       parent = @target_definition
-      @target_definitions[name] = @target_definition = TargetDefinition.new(name, options[:exclusive] ? nil : parent)
+      @target_definitions[name] = @target_definition = TargetDefinition.new(name, options[:exclusive] ? nil : parent, options[:include_headers_for] ? @target_definitions[options[:include_headers_for]] : nil)
       yield
     ensure
       @target_definition = parent
